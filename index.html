@@ -264,10 +264,18 @@ body.locked .results{display:none!important}
 #conn-dot{width:7px;height:7px;border-radius:50%;background:#484f58;flex-shrink:0;transition:background .4s}
 #conn-txt{font-size:10px;color:#7d8590;font-weight:500}
 
+
+/* ── Mod type selector ── */
+.mod-type-btn{flex:1;background:#161b22;color:#7d8590;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Segoe UI',system-ui,sans-serif;transition:all .15s}
+.mod-type-btn.active{background:#0d2136;color:#58a6ff;border-color:#1d3d5c}
+/* ── Stock op buttons ── */
+.stock-op-btn{flex:1;background:#161b22;color:#7d8590;border:1px solid #30363d;border-radius:6px;padding:7px 4px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Segoe UI',system-ui,sans-serif;transition:all .15s}
+.stock-op-btn.active{background:#0d2a13;color:#3fb950;border-color:#1d4a22}
+
 </style>
 <!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -785,8 +793,12 @@ body.locked .results{display:none!important}
 
     <!-- STEP 1: scan product -->
     <div class="mod-card" id="mod-step1">
-      <div class="mod-step-label">Paso 1 — Producto</div>
-      <div class="mod-step-desc">Escanea o ingresa el código del producto a reubicar</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="mod-type-btn active" id="btn-type-ubic" onclick="setModType('ubic')">📍 Ubicación</button>
+        <button class="mod-type-btn" id="btn-type-stock" onclick="setModType('stock')">📦 Stock</button>
+      </div>
+      <div class="mod-step-label" id="mod-step1-label">Paso 1 — Producto</div>
+      <div class="mod-step-desc" id="mod-step1-desc">Escanea o ingresa el código del producto a reubicar</div>
       <div class="sbox" style="margin-top:10px">
         <span class="sico">🔢</span>
         <input id="mod-cod" type="search" placeholder="Código o código de barra..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"/>
@@ -802,21 +814,39 @@ body.locked .results{display:none!important}
       <div id="mod-product-preview" style="display:none"></div>
     </div>
 
-    <!-- STEP 2: new location -->
+    <!-- STEP 2: new location OR stock -->
     <div class="mod-card" id="mod-step2" style="display:none">
-      <div class="mod-step-label">Paso 2 — Nueva ubicación</div>
-      <div class="mod-step-desc">Ingresa el nuevo código de ubicación (ej: F-01-01-05-02-B-01)</div>
-      <div class="sbox" style="margin-top:10px">
-        <span class="sico">📍</span>
-        <input id="mod-ubic" type="text" placeholder="F-00-00-00-00-X-00" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"/>
+      <!-- Ubicación -->
+      <div id="step2-ubic-panel">
+        <div class="mod-step-label">Paso 2 — Nueva ubicación</div>
+        <div class="mod-step-desc">Ingresa el nuevo código de ubicación (ej: F-01-01-05-02-B-01)</div>
+        <div class="sbox" style="margin-top:10px">
+          <span class="sico">📍</span>
+          <input id="mod-ubic" type="text" placeholder="F-00-00-00-00-X-00" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"/>
+        </div>
+        <div id="mod-ubic-preview" style="display:none"></div>
       </div>
-      <div id="mod-ubic-preview" style="display:none"></div>
-      <button class="mod-confirm-btn" id="mod-confirm-btn" onclick="modConfirmStep()">Confirmar cambio →</button>
+      <!-- Stock -->
+      <div id="step2-stock-panel" style="display:none">
+        <div class="mod-step-label">Paso 2 — Modificar stock</div>
+        <div class="mod-step-desc">Stock actual: <b id="stock-actual-val" style="color:#e6edf3">—</b> unidades</div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="stock-op-btn active" id="btn-op-set"    onclick="setStockOp('set')">= Establecer</button>
+          <button class="stock-op-btn"        id="btn-op-add"    onclick="setStockOp('add')">+ Agregar</button>
+          <button class="stock-op-btn"        id="btn-op-remove" onclick="setStockOp('remove')">− Restar</button>
+        </div>
+        <div class="sbox" style="margin-top:10px">
+          <span class="sico">📦</span>
+          <input id="mod-stock-val" type="number" min="0" placeholder="Cantidad..." style="flex:1;border:none;outline:none;padding:13px 4px;font-size:16px;background:transparent;color:#e6edf3"/>
+        </div>
+        <div id="stock-resultado-preview" style="margin-top:8px;font-size:12px;color:#7d8590;display:none"></div>
+      </div>
+      <button class="mod-confirm-btn" id="mod-confirm-btn" onclick="modConfirmStep()">Confirmar →</button>
     </div>
 
     <!-- STEP 3: password confirm -->
     <div class="mod-card" id="mod-step3" style="display:none">
-      <div class="mod-step-label">Paso 3 — Confirmar identidad</div>
+      <div class="mod-step-label" id="step3-label">Paso 3 — Confirmar identidad</div>
       <div class="mod-step-desc">Ingresa tu contraseña para guardar el cambio</div>
       <div class="lfield" style="margin-top:10px">
         <span class="lico">🔒</span>
@@ -1149,10 +1179,21 @@ function modSearchProduct(v) {
 function modGoStep2() {
   if(!modCurrentProduct) return;
   document.getElementById('mod-step2').style.display='block';
-  document.getElementById('mod-ubic').value='';
-  document.getElementById('mod-ubic-preview').style.display='none';
-  document.getElementById('mod-ubic').focus();
   stopModScanner();
+  if(modType==='ubic') {
+    document.getElementById('step2-ubic-panel').style.display='block';
+    document.getElementById('step2-stock-panel').style.display='none';
+    document.getElementById('mod-ubic').value='';
+    document.getElementById('mod-ubic-preview').style.display='none';
+    document.getElementById('mod-ubic').focus();
+  } else {
+    document.getElementById('step2-ubic-panel').style.display='none';
+    document.getElementById('step2-stock-panel').style.display='block';
+    document.getElementById('stock-actual-val').textContent = modCurrentProduct.stock || 0;
+    document.getElementById('mod-stock-val').value='';
+    document.getElementById('stock-resultado-preview').style.display='none';
+    document.getElementById('mod-stock-val').focus();
+  }
 }
 
 // ubic input
@@ -1180,20 +1221,36 @@ document.getElementById('mod-ubic').addEventListener('input', e => {
 document.getElementById('mod-ubic').addEventListener('keydown', e => { if(e.key==='Enter') modConfirmStep(); });
 
 function modConfirmStep() {
-  const newUbic = document.getElementById('mod-ubic').value.trim().toUpperCase();
-  if(!newUbic || !modCurrentProduct) return;
-  // show step3
-  document.getElementById('mod-step3').style.display='block';
-  document.getElementById('mod-pass').value='';
-  document.getElementById('mod-err').textContent='';
-  // show summary
-  const sum = document.getElementById('mod-summary');
-  sum.style.display='block';
-  sum.innerHTML=`
-    <div class="mod-summary-row"><span class="mod-summary-key">Producto</span><span class="mod-summary-val" style="color:#e6edf3;font-family:inherit;font-size:12px;max-width:60%;text-align:right">${modCurrentProduct.desc}</span></div>
+  if(!modCurrentProduct) return;
+  let sum_html = '';
+  if(modType==='ubic') {
+    const newUbic = document.getElementById('mod-ubic').value.trim().toUpperCase();
+    if(!newUbic) return;
+    sum_html = `<div class="mod-summary-row"><span class="mod-summary-key">Tipo</span><span class="mod-summary-val">📍 Cambio de ubicación</span></div>
+    <div class="mod-summary-row"><span class="mod-summary-key">Producto</span><span class="mod-summary-val" style="color:#e6edf3;font-family:inherit;font-size:11px;max-width:55%;text-align:right">${modCurrentProduct.desc}</span></div>
     <div class="mod-summary-row"><span class="mod-summary-key">Código</span><span class="mod-summary-val">${modCurrentProduct.cod}</span></div>
     <div class="mod-summary-row"><span class="mod-summary-key">Ubicación actual</span><span class="mod-summary-val">${modCurrentProduct.ubic||'—'}</span></div>
     <div class="mod-summary-row"><span class="mod-summary-key">Nueva ubicación</span><span class="mod-summary-arrow">→ ${newUbic}</span></div>`;
+  } else {
+    const val = parseInt(document.getElementById('mod-stock-val').value)||0;
+    const oldStock = modCurrentProduct.stock || 0;
+    let newStock;
+    if(stockOp==='set')    newStock = val;
+    if(stockOp==='add')    newStock = oldStock + val;
+    if(stockOp==='remove') newStock = Math.max(0, oldStock - val);
+    const opLabel = stockOp==='set'?'Establecer en':stockOp==='add'?'Agregar':'Restar';
+    sum_html = `<div class="mod-summary-row"><span class="mod-summary-key">Tipo</span><span class="mod-summary-val">📦 Modificación de stock</span></div>
+    <div class="mod-summary-row"><span class="mod-summary-key">Producto</span><span class="mod-summary-val" style="color:#e6edf3;font-family:inherit;font-size:11px;max-width:55%;text-align:right">${modCurrentProduct.desc}</span></div>
+    <div class="mod-summary-row"><span class="mod-summary-key">Operación</span><span class="mod-summary-val">${opLabel} ${val}</span></div>
+    <div class="mod-summary-row"><span class="mod-summary-key">Stock actual</span><span class="mod-summary-val">${oldStock} uds.</span></div>
+    <div class="mod-summary-row"><span class="mod-summary-key">Stock nuevo</span><span class="mod-summary-arrow">→ ${newStock} uds.</span></div>`;
+  }
+  document.getElementById('mod-step3').style.display='block';
+  document.getElementById('mod-pass').value='';
+  document.getElementById('mod-err').textContent='';
+  const sum = document.getElementById('mod-summary');
+  sum.style.display='block';
+  sum.innerHTML = sum_html;
   document.getElementById('mod-pass').focus();
 }
 
@@ -1210,44 +1267,83 @@ function toggleModEye() {
 
 document.getElementById('mod-pass').addEventListener('keydown', e => { if(e.key==='Enter') modSave(); });
 
+// ── Mod type (ubic or stock) ──
+let modType = 'ubic';
+let stockOp = 'set';
+
+function setModType(type) {
+  modType = type;
+  document.getElementById('btn-type-ubic').classList.toggle('active', type==='ubic');
+  document.getElementById('btn-type-stock').classList.toggle('active', type==='stock');
+  document.getElementById('mod-step1-label').textContent  = type==='ubic' ? 'Paso 1 — Producto a reubicar' : 'Paso 1 — Producto a actualizar stock';
+  document.getElementById('mod-step1-desc').textContent   = type==='ubic' ? 'Escanea o ingresa el código del producto a reubicar' : 'Escanea o ingresa el código del producto';
+}
+
+function setStockOp(op) {
+  stockOp = op;
+  ['set','add','remove'].forEach(o => document.getElementById('btn-op-'+o).classList.toggle('active', o===op));
+  updateStockPreview();
+}
+
+function updateStockPreview() {
+  const val = parseInt(document.getElementById('mod-stock-val').value)||0;
+  const actual = modCurrentProduct ? modCurrentProduct.stock : 0;
+  const prev = document.getElementById('stock-resultado-preview');
+  let resultado;
+  if(stockOp==='set')    resultado = val;
+  if(stockOp==='add')    resultado = actual + val;
+  if(stockOp==='remove') resultado = Math.max(0, actual - val);
+  prev.textContent = `Resultado: ${actual} → ${resultado} unidades`;
+  prev.style.display = 'block';
+  prev.style.color = resultado < 0 ? '#f85149' : '#3fb950';
+}
+
+document.getElementById('mod-stock-val') && document.getElementById('mod-stock-val').addEventListener('input', updateStockPreview);
+
 function modSave() {
   const pass = document.getElementById('mod-pass').value.trim();
   const err  = document.getElementById('mod-err');
-  // find logged user from the login (we stored it)
-  const loginUser = document.getElementById('lu') ? document.getElementById('lu').value.trim().toUpperCase() : '';
-  // check all users
   const matchUser = Object.keys(USERS).find(u => USERS[u] === pass);
   if(!matchUser) { err.textContent='⚠️ Contraseña incorrecta'; return; }
   err.textContent='';
-  const newUbic = document.getElementById('mod-ubic').value.trim().toUpperCase();
-  const oldUbic = modCurrentProduct.ubic;
 
-  // Update DATA in memory
-  const idx = DATA.findIndex(d=>d.cod===modCurrentProduct.cod && d.ubic===modCurrentProduct.ubic);
-  if(idx>=0) DATA[idx].ubic = newUbic;
-  modCurrentProduct.ubic = newUbic;
+  if(modType === 'ubic') {
+    // ── GUARDAR UBICACIÓN ──
+    const newUbic = document.getElementById('mod-ubic').value.trim().toUpperCase();
+    const oldUbic = modCurrentProduct.ubic;
+    const idx = DATA.findIndex(d=>d.cod===modCurrentProduct.cod && d.ubic===modCurrentProduct.ubic);
+    if(idx>=0) DATA[idx].ubic = newUbic;
+    modCurrentProduct.ubic = newUbic;
+    pushCambioFirebase(modCurrentProduct.cod, modCurrentProduct.desc, oldUbic, newUbic, matchUser, 'ubic');
+    const hist = JSON.parse(localStorage.getItem('dimerc_hist')||'[]');
+    hist.unshift({ ts: new Date().toLocaleString('es-CL'), tipo:'📍 Ubicación', cod: modCurrentProduct.cod, desc: modCurrentProduct.desc, de: oldUbic, a: newUbic, user: matchUser });
+    if(hist.length>50) hist.pop();
+    localStorage.setItem('dimerc_hist', JSON.stringify(hist));
+    document.getElementById('mod-success-msg').textContent = modCurrentProduct.desc + ' → ' + newUbic + ' (por ' + matchUser + ')';
+  } else {
+    // ── GUARDAR STOCK ──
+    const val = parseInt(document.getElementById('mod-stock-val').value)||0;
+    const oldStock = modCurrentProduct.stock;
+    let newStock;
+    if(stockOp==='set')    newStock = val;
+    if(stockOp==='add')    newStock = oldStock + val;
+    if(stockOp==='remove') newStock = Math.max(0, oldStock - val);
+    const idx = DATA.findIndex(d=>d.cod===modCurrentProduct.cod);
+    if(idx>=0) DATA[idx].stock = newStock;
+    modCurrentProduct.stock = newStock;
+    pushCambioFirebase(modCurrentProduct.cod, modCurrentProduct.desc, String(oldStock), String(newStock), matchUser, 'stock');
+    const hist = JSON.parse(localStorage.getItem('dimerc_hist')||'[]');
+    hist.unshift({ ts: new Date().toLocaleString('es-CL'), tipo:'📦 Stock', cod: modCurrentProduct.cod, desc: modCurrentProduct.desc, de: oldStock, a: newStock, user: matchUser });
+    if(hist.length>50) hist.pop();
+    localStorage.setItem('dimerc_hist', JSON.stringify(hist));
+    document.getElementById('mod-success-msg').textContent = modCurrentProduct.desc + ': ' + oldStock + ' → ' + newStock + ' uds. (por ' + matchUser + ')';
+  }
 
-  // Guardar en Firebase (sincronización en tiempo real)
-  pushCambioFirebase(modCurrentProduct.cod, modCurrentProduct.desc, oldUbic, newUbic, matchUser);
-
-  // Save to local history
-  const hist = JSON.parse(localStorage.getItem('dimerc_hist')||'[]');
-  hist.unshift({
-    ts: new Date().toLocaleString('es-CL'),
-    cod: modCurrentProduct.cod,
-    desc: modCurrentProduct.desc,
-    oldUbic, newUbic,
-    user: matchUser
-  });
-  if(hist.length>50) hist.pop();
-  localStorage.setItem('dimerc_hist', JSON.stringify(hist));
-
-  // Show success
+  render();
   document.getElementById('mod-step1').style.display='none';
   document.getElementById('mod-step2').style.display='none';
   document.getElementById('mod-step3').style.display='none';
   document.getElementById('mod-step4').style.display='block';
-  document.getElementById('mod-success-msg').textContent=`${modCurrentProduct.desc} → ${newUbic} (por ${matchUser})`;
   renderModHistory();
 }
 
@@ -1257,6 +1353,8 @@ function modReset() {
   modClear();
   document.getElementById('mod-ubic').value='';
   document.getElementById('mod-ubic-preview').style.display='none';
+  document.getElementById('mod-stock-val').value='';
+  document.getElementById('stock-resultado-preview').style.display='none';
   document.getElementById('mod-summary').style.display='none';
   modCurrentProduct=null;
 }
@@ -1268,8 +1366,8 @@ function renderModHistory() {
   if(!hist.length) { card.style.display='none'; return; }
   card.style.display='block';
   list.innerHTML = hist.map(h=>`<div class="hist-item">
-    <div class="hist-item-name">${h.desc}</div>
-    <div class="hist-item-sub">Código: <b style="color:#e6edf3">${h.cod}</b> · <span>${h.oldUbic||'—'}</span> → <span style="color:#3fb950">${h.newUbic}</span></div>
+    <div class="hist-item-name">${h.tipo||'✏️'} ${h.desc}</div>
+    <div class="hist-item-sub">Código: <b style="color:#e6edf3">${h.cod}</b> · <span>${h.de||h.oldUbic||'—'}</span> → <span style="color:#3fb950">${h.a||h.newUbic||'—'}</span></div>
     <div class="hist-item-user">✏️ ${h.user} · ${h.ts}</div>
   </div>`).join('');
 }
@@ -1328,64 +1426,73 @@ function startModDecoding() {
 }
 
 
-// ═══════════════════════════════════════════════
-// FIREBASE — Sincronización en tiempo real
-// ═══════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyCdESA_0cYJ3SJ1nA1dDHFGKsnEch94PiY",
-  authDomain: "app-bodega-dimerc.firebaseapp.com",
-  databaseURL: "https://app-bodega-dimerc-default-rtdb.firebaseio.com",
-  projectId: "app-bodega-dimerc",
-  storageBucket: "app-bodega-dimerc.firebasestorage.app",
-  messagingSenderId: "640263234486",
-  appId: "1:640263234486:web:ee02eb2df01f03113b5717"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const ubicRef = db.ref('ubicaciones');
-
-// ── Estado de conexión ──────────────────────────
-const connRef = db.ref('.info/connected');
-connRef.on('value', snap => {
-  const online = snap.val();
-  const dot = document.getElementById('conn-dot');
-  const txt = document.getElementById('conn-txt');
-  if (!dot) return;
-  if (online) {
-    dot.style.background = '#3fb950';
-    txt.textContent = 'En línea';
-  } else {
-    dot.style.background = '#f85149';
-    txt.textContent = 'Sin conexión';
-  }
-});
-
-// ── Escuchar cambios de otros usuarios en tiempo real ──
-ubicRef.on('child_changed', snap => {
-  const { cod, ubic, oldUbic, desc, user, ts } = snap.val();
-  // Actualizar DATA en memoria
-  DATA.forEach(d => { if (d.cod === cod && d.ubic === oldUbic) d.ubic = ubic; });
-  // Re-renderizar si hay búsqueda activa
-  render();
-  // Mostrar toast de notificación
-  showToast(`✏️ ${user} cambió ${desc.substring(0,25)}... → ${ubic}`);
-});
-
-// ── Guardar cambio en Firebase ──────────────────
-function pushCambioFirebase(cod, desc, oldUbic, newUbic, user) {
-  const key = ubicRef.push().key;
-  ubicRef.child(key).set({ cod, desc, oldUbic, ubic: newUbic, user, ts: new Date().toISOString() });
-}
-
-// ── Toast de notificación ───────────────────────
-function showToast(msg) {
-  const t = document.getElementById('fb-toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 4000);
-}
-
 </script>
+
+
+<script>
+// ═══════════════════════════════════════
+// FIREBASE — init después del DOM/DATA
+// ═══════════════════════════════════════
+(function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    setTimeout(initFirebase, 100); return;
+  }
+  if (firebase.apps.length) return;
+
+  firebase.initializeApp({
+    apiKey: "AIzaSyCdESA_0cYJ3SJ1nA1dDHFGKsnEch94PiY",
+    authDomain: "app-bodega-dimerc.firebaseapp.com",
+    databaseURL: "https://app-bodega-dimerc-default-rtdb.firebaseio.com",
+    projectId: "app-bodega-dimerc",
+    storageBucket: "app-bodega-dimerc.firebasestorage.app",
+    messagingSenderId: "640263234486",
+    appId: "1:640263234486:web:ee02eb2df01f03113b5717"
+  });
+
+  const db      = firebase.database();
+  const cambRef = db.ref('cambios');
+
+  // ── Indicador conexión ──────────────
+  db.ref('.info/connected').on('value', snap => {
+    const dot = document.getElementById('conn-dot');
+    const txt = document.getElementById('conn-txt');
+    if (!dot) return;
+    const online = !!snap.val();
+    dot.style.background = online ? '#3fb950' : '#f85149';
+    txt.textContent      = online ? 'En línea'  : 'Sin conexión';
+  });
+
+  // ── Escuchar cambios en tiempo real ─
+  let loaded = false;
+  cambRef.on('child_added', snap => {
+    if (!loaded) return;
+    const d = snap.val();
+    if (!d) return;
+    if (d.tipo === 'ubic') {
+      DATA.forEach(p => { if (p.cod === d.cod && p.ubic === d.de) p.ubic = d.a; });
+    } else if (d.tipo === 'stock') {
+      DATA.forEach(p => { if (p.cod === d.cod) p.stock = parseInt(d.a); });
+    }
+    if (typeof render === 'function') render();
+    showToastFB((d.tipo==='stock'?'📦':'📍') + ' ' + d.user + ': ' + d.desc.substring(0,25) + '...');
+  });
+  cambRef.once('value', () => { loaded = true; });
+
+  // ── Guardar cambio ──────────────────
+  window.pushCambioFirebase = function(cod, desc, de, a, user, tipo) {
+    cambRef.push({ cod, desc, de, a, user, tipo: tipo||'ubic', ts: new Date().toISOString() });
+  };
+
+  // ── Toast ───────────────────────────
+  window.showToast = window.showToastFB = function(msg) {
+    const t = document.getElementById('fb-toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4500);
+  };
+})();
+</script>
+
 </body>
 </html>
